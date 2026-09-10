@@ -98,7 +98,7 @@ interface TournamentState {
   start: (id: string) => void;
   beginRound: (id: string, round: number) => void;
   finishRound: (id: string) => void;
-  reportResult: (id: string, gameId: string, result: ResultCode, moves: string[], reason: string) => void;
+  reportResult: (id: string, gameId: string, result: ResultCode, moves: string[], reason?: string) => void;
   setSpeed: (id: string, speed: number) => void;
   setPaused: (paused: boolean) => void;
   claim: (id: string, gameId: string, playerId: string, asHuman: boolean) => void;
@@ -236,10 +236,22 @@ export const useTournaments = create<TournamentState>()(
           return;
         }
 
+        const byId = new Map(t.players.map((p) => [p.id, p]));
+        const paired = games.map((g) => ({
+          ...g,
+          whiteElo: byId.get(g.whiteId)?.rating ?? 0,
+          blackElo: byId.get(g.blackId)?.rating ?? 0,
+        }));
+        // re-running a round must not replay what already has a result (and must
+        // not add a second copy of a bye)
+        const earlier = t.games.filter((g) => g.round !== round);
+        const kept = t.games.filter((g) => g.round === round && (g.status === 'finished' || g.status === 'bye'));
+        const keptKeys = new Set(kept.map((g) => `${g.whiteId}>${g.blackId}`));
+        const added = paired.filter((g) => !keptKeys.has(`${g.whiteId}>${g.blackId}`));
         const next = update(t, {
           currentRound: round,
           status: 'running',
-          games: [...t.games.filter((g) => g.round !== round || g.status === 'finished'), ...games],
+          games: [...earlier, ...kept, ...added],
         });
         set((st) => ({ tournaments: st.tournaments.map((x) => (x.id === id ? next : x)) }));
 
@@ -432,17 +444,54 @@ export const useTournaments = create<TournamentState>()(
         const t = s.tournaments.find((x) => x.id === id);
         if (!t) return '';
         const byId = new Map(t.players.map((p) => [p.id, p]));
-        return t.games
-          .map((g, i) => {
-            const white = byId.get(g.whiteId)?.name ?? '?';
-            const black = byId.get(g.blackId)?.name ?? '?';
-            let body = '';
-            g.moves.forEach((san, idx) => {
-              body += idx % 2 === 0 ? `${idx === 0 ? '' : ' '}${idx / 2 + 1}. ${san}` : ` ${san}`;
-            });
-            return `[Event "${t.name}"]\n[Round "${g.round}"]\n[White "${white}"]\n[Black "${black}"]\n[Result "${g.result ?? '*'}"]\n\n${body} ${g.result ?? '*'}\n`;
-          })
-          .join('\n');
+        const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+        const termination = (reason?: string) => {
+          if (!reason) return '';
+          if (/abandon/i.test(reason)) return '\n[Termination "abandoned"]';
+          if (/resign/i.test(reason)) return '\n[Termination "resigned"]';
+          if (/flag|forfeit|timeout/i.test(reason)) return '\n[Termination "time forfeit"]';
+          if (/agreed|draw/i.test(reason)) return '\n[Termination "agreed"]';
+          return '';
+        };
+        const date = new Date(t.createdAt ?? Date.now());
+        const stamp = `${date.getUTCFullYear()}.${String(date.getUTCMonth() + 1).padStart(2, '0')}.${String(
+          date.getUTCDate(),
+        ).padStart(2, '0')} ${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(
+          2,
+          '0',
+        )}:${String(date.getUTCSeconds()).padStart(2, '0')}`;
+
+        // byes are not games, so they get no PGN record at all
+        return (
+          t.games
+            .filter((g) => g.status !== 'bye')
+            .map((g) => {
+              const white = byId.get(g.whiteId);
+              const black = byId.get(g.blackId);
+              let body = '';
+              g.moves.forEach((san, idx) => {
+                body += idx % 2 === 0 ? `${idx === 0 ? '' : ' '}${idx / 2 + 1}. ${san}` : ` ${san}`;
+              });
+              const result = g.result ?? '*';
+              const tags = [
+                `[Event "${t.name}"]`,
+                '[Site "Chess3D"]',
+                `[Date "${stamp.trim()}"]`,
+                `[Round "${g.round}"]`,
+                `[White "${white?.name ?? ''}"]`,
+                `[Black "${black?.name ?? ''}"]`,
+                white?.rating ? `[WhiteElo "${white.rating}"]` : '',
+                black?.rating ? `[BlackElo "${black.rating}"]` : '',
+                g.startFen && g.startFen !== START ? `[SetUp "1"]\n[FEN "${g.startFen}"]` : '',
+                termination(g.reason),
+                `[Result "${result}"]`,
+              ]
+                .filter(Boolean)
+                .join('\n');
+              return `${tags}\n\n${body ? `${body} ` : ''}${result}\n`;
+            })
+            .join('\n')
+        );
       },
 
       standings: (id) => {

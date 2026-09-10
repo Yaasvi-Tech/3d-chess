@@ -20,7 +20,7 @@ works offline.
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # production bundle in dist/
-npm test         # 62 unit + integration tests
+npm test         # 68 unit + integration tests
 ```
 
 ## The four pillars
@@ -82,7 +82,8 @@ match, colours swapped).
 - Standings with win/draw/loss, Sonneborn-Berger, win count and tournament
   performance rating, plus form strings. A level knockout tie is settled by the
   result with the black pieces, then by seeding — never by a coin flip.
-- Full-event PGN export (copy or download).
+- Full-event PGN export (copy or download) with player names, ratings, clock
+  results and termination reasons — byes are recorded in the table, not as games.
 
 ## Playing
 

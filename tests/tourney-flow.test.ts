@@ -119,4 +119,61 @@ describe('tournament flow', () => {
     useTournaments.getState().releaseBoard(mine.id);
     expect(ctrl!.seatFor(humanSeatColor).kind).toBe('bot');
   });
+
+  it('exports only real games as PGN, with rating and termination tags', () => {
+    const s = useTournaments.getState();
+    const id = s.createTournament({
+      name: 'PGN Open',
+      format: 'round-robin',
+      players,
+      timeControl: 'rapid',
+      clockEnabled: false,
+      autoAdvance: false,
+    });
+    useTournaments.getState().start(id);
+    const t = useTournaments.getState().tournaments.find((x) => x.id === id)!;
+    const real = t.games.filter((g) => g.status !== 'bye');
+    const bye = t.games.find((g) => g.status === 'bye')!;
+    useTournaments.getState().reportResult(id, real[0].id, '1-0', ['e4', 'e5', 'Nf3'], 'Black resigned');
+
+    const pgn = useTournaments.getState().exportPgn(id);
+    // one record per played game: a bye is not a game and must not appear
+    expect(pgn.match(/\[Event /g)).toHaveLength(real.length);
+    expect(pgn.match(/\[Result /g)).toHaveLength(real.length);
+    const nameOf = (pid: string) => players.find((p) => p.id === pid)!.name;
+    expect(pgn).toContain(`[White "${nameOf(real[0].whiteId)}"]`);
+    expect(pgn).toContain(`[Black "${nameOf(real[0].blackId)}"]`);
+    expect(pgn).toContain('[WhiteElo "1500"]');
+    expect(pgn).toContain('[BlackElo "1500"]');
+    expect(pgn).toContain('[Termination "resigned"]');
+    expect(pgn).toContain('[Site "Chess3D"]');
+    expect(pgn).toContain('1. e4 e5 2. Nf3 1-0');
+    expect(pgn).not.toContain('[Black "?"');
+    void bye;
+  });
+
+  it('re-running a round keeps results and never duplicates the bye', () => {
+    const s = useTournaments.getState();
+    const id = s.createTournament({
+      name: 'Resilient',
+      format: 'round-robin',
+      players,
+      timeControl: 'rapid',
+      clockEnabled: false,
+      autoAdvance: false,
+    });
+    useTournaments.getState().start(id);
+    const first = useTournaments.getState().tournaments.find((x) => x.id === id)!;
+    const live = first.games.filter((g) => g.round === 1 && g.status !== 'bye');
+    expect(live).toHaveLength(1);
+    useTournaments.getState().reportResult(id, live[0].id, '1-0', ['e4']);
+
+    useTournaments.getState().beginRound(id, 1);
+    const again = useTournaments.getState().tournaments.find((x) => x.id === id)!;
+    const round1 = again.games.filter((g) => g.round === 1);
+    expect(round1).toHaveLength(2); // pairing + bye, not pairing + bye + bye
+    expect(round1.filter((g) => g.status === 'bye')).toHaveLength(1);
+    expect(round1.find((g) => g.id === live[0].id)?.result).toBe('1-0');
+  });
 });
+
