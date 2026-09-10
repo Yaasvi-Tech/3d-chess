@@ -3,7 +3,7 @@
  *  - the UI (eval bar, advantage badges) — cheap, synchronous
  *  - the search engine in the web worker (piece-square tables + structure)
  *
- * All scores are expressed in pawns from White's point of view.
+ * All scores are centipawns from White's point of view (positive = good for White).
  */
 import type { Color, PieceType } from './types';
 
@@ -91,17 +91,32 @@ export interface StaticEvalOptions {
 /**
  * Evaluate a FEN without allocating a Chess instance (hot path in the worker).
  */
+// prettier-ignore
+const KING_END = [
+  -50,-40,-30,-20,-20,-30,-40,-50,
+  -30,-20,-10,  0,  0,-10,-20,-30,
+  -30,-10, 20, 30, 30, 20,-10,-30,
+  -30,-10, 30, 40, 40, 30,-10,-30,
+  -30,-10, 30, 40, 40, 30,-10,-30,
+  -30,-10, 20, 30, 30, 20,-10,-30,
+  -30,-30,  0,  0,  0,  0,-30,-30,
+  -50,-30,-30,-30,-30,-30,-30,-50,
+];
+
+/** King activity profile once the queens are off. */
 export function evalFen(fen: string, opts: StaticEvalOptions = {}): number {
   const placement = fen.split(' ')[0];
-  let score = 0;
   let rank = 7;
   let file = 0;
-  let material = 0;
-  const counts = {
-    w: { p: 0, n: 0, b: 0, r: 0, q: 0 } as Record<string, number>,
-    b: { p: 0, n: 0, b: 0, r: 0, q: 0 } as Record<string, number>,
+  let score = 0;
+  /** non-pawn material per side, used to spot the endgame */
+  const fighting: Record<Color, number> = { w: 0, b: 0 };
+  const counts: Record<Color, Record<string, number>> = {
+    w: { p: 0, n: 0, b: 0, r: 0, q: 0 },
+    b: { p: 0, n: 0, b: 0, r: 0, q: 0 },
   };
-  const pawnFiles: Record<Color, number[]> = { w: [], b: [] };
+  const pawns: Record<Color, { file: number; rank: number }[]> = { w: [], b: [] };
+  const kingAt: Record<Color, number | null> = { w: null, b: null };
 
   for (let i = 0; i < placement.length; i++) {
     const c = placement[i];
@@ -116,57 +131,59 @@ export function evalFen(fen: string, opts: StaticEvalOptions = {}): number {
     }
     const color: Color = c === c.toUpperCase() ? 'w' : 'b';
     const type = c.toLowerCase() as PieceType;
-    const idx = color === 'w' ? rank * 8 + file : (7 - rank) * 8 + file;
-    const table = PST[type] ?? PST.p;
+    // tables are printed with rank 8 first, so White reads them bottom-up
+    const idx = color === 'w' ? (7 - rank) * 8 + file : rank * 8 + file;
     const sign = color === 'w' ? 1 : -1;
-    if (type !== 'k') {
-      material += (PIECE_VALUE[type] - 100) * sign;
-      counts[color][type]++;
-    }
     if (type === 'k') {
-      score += sign * (opts.endgame ? KING_END[idx] : table[idx]);
-    } else {
-      score += sign * (table[idx] ?? 0);
+      kingAt[color] = idx;
+      file++;
+      continue;
     }
-    if (type === 'p') pawnFiles[color].push(file);
+    const value = PIECE_VALUE[type] ?? 100;
+    if (type !== 'p') fighting[color] += value;
+    counts[color][type]++;
+    // material first, then the positional bonus from the piece-square table
+    score += sign * (value + (PST[type]?.[idx] ?? 0));
+    if (type === 'p') pawns[color].push({ file, rank });
     file++;
   }
 
+  // King safety matters in the middlegame, centralisation in the endgame.
+  const endgame =
+    opts.endgame ??
+    ((counts.w.q === 0 && counts.b.q === 0) || (fighting.w <= 700 && fighting.b <= 700));
+  const kingTable = endgame ? KING_END : (PST.k ?? KING_END);
+  if (kingAt.w !== null) score += kingTable[kingAt.w] ?? 0;
+  if (kingAt.b !== null) score -= kingTable[kingAt.b] ?? 0;
+
   if (opts.includeStructure) {
-    const mateR = material / 100;
-    const endgameish = mateR > 8;
-    if (!opts.endgame && endgameish) score = evalFen(fen, { ...opts, endgame: true });
     for (const color of ['w', 'b'] as const) {
       const sign = color === 'w' ? 1 : -1;
-      const files = pawnFiles[color];
-      const seen = new Map<number, number>();
-      for (const f of files) seen.set(f, (seen.get(f) ?? 0) + 1);
-      for (const [, n] of seen) if (n > 1) score -= sign * 14 * (n - 1); // doubled
-      for (let f = 0; f < 8; f++) {
-        const has = seen.has(f);
-        const adjacent = seen.has(f - 1) || seen.has(f + 1);
-        if (has && !adjacent) score += sign * 14; // passed-ish bonus (isolated bonus kept simple)
-        if (!has && (f === 0 || f === 7 || !seen.has(f - 1)) && !seen.has(f + 1)) score -= sign * 12; // isolated
+      const mine = pawns[color];
+      const theirs = pawns[color === 'w' ? 'b' : 'w'];
+      const byFile = new Map<number, number[]>();
+      for (const p of mine) {
+        const list = byFile.get(p.file);
+        if (list) list.push(p.rank);
+        else byFile.set(p.file, [p.rank]);
       }
-      if (counts[color].b === 2) score += sign * 26; // bishop pair
-      score += sign * (counts[color].n * 4 + counts[color].r * 6); // minor/activity nudge
+      for (const p of mine) {
+        const onFile = byFile.get(p.file)?.length ?? 0;
+        if (onFile > 1) score -= sign * 12 * (onFile - 1); // doubled
+        const hasNeighbour = byFile.has(p.file - 1) || byFile.has(p.file + 1);
+        if (!hasNeighbour) score -= sign * 14; // isolated
+        // passed: no enemy pawn can ever catch it on this or an adjacent file
+        const blocked = theirs.some((o) =>
+          Math.abs(o.file - p.file) <= 1 && (color === 'w' ? o.rank >= p.rank : o.rank <= p.rank),
+        );
+        if (!blocked) score += sign * (20 + (color === 'w' ? p.rank - 1 : 6 - p.rank) * 8);
+      }
+      if (counts[color].b === 2) score += sign * 30; // bishop pair
     }
   }
 
   return score;
 }
-
-// prettier-ignore
-const KING_END = [
-  -50,-40,-30,-20,-20,-30,-40,-50,
-  -30,-20,-10,  0,  0,-10,-20,-30,
-  -30,-10, 20, 30, 30, 20,-10,-30,
-  -30,-10, 30, 40, 40, 30,-10,-30,
-  -30,-10, 30, 40, 40, 30,-10,-30,
-  -30,-10, 20, 30, 30, 20,-10,-30,
-  -30,-30,  0,  0,  0,  0,-30,-30,
-  -50,-30,-30,-30,-30,-30,-30,-50,
-];
 
 /** Convenience for the UI: centipawn eval of the position from chess.js state. */
 export function evalFromFen(fen: string): number {

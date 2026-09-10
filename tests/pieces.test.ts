@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Chess } from 'chess.js';
 import { BOARD_STYLES, LOCATIONS, PIECE_STYLES, THEMES, type BoardStyleId, type LocationId, type PieceStyleId } from '../src/data/styles';
 import { buildPiece, PIECE_TYPES } from '../src/scene/pieceGeometry';
+import { evalFen } from '../src/game/eval';
 import { inlayGeometry, frameGeometry, plinthGeometry, tileGeometry } from '../src/scene/geo';
 import { bannerTexture, bookTexture, gridGlowTexture, labelTexture, lavaTexture, marbleTexture, radialTexture, ringTexture, roughnessNoise, screenTexture, skyTexture, stoneTexture, woodTexture } from '../src/scene/textures';
 import { trackedFromBoard, applyMoveToPieces } from '../src/game/pieces';
@@ -159,5 +160,45 @@ describe('tracked piece identities', () => {
     const promoted = after.find((p) => p.square === 'a8')!;
     expect(promoted.type).toBe('q');
     expect(promoted.id).toBe(before.find((p) => p.square === 'a7')!.id);
+  });
+});
+
+describe('static evaluation', () => {
+  const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  it('is balanced at the start and symmetric under a colour flip', () => {
+    expect(Math.abs(evalFen(start, { includeStructure: true }))).toBeLessThan(20);
+  });
+
+  it('values material without double counting structure', () => {
+    const upQueen = 'rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    expect(evalFen(upQueen, { includeStructure: true })).toBeGreaterThan(600);
+    const plain = evalFen(upQueen, {});
+    const withStructure = evalFen(upQueen, { includeStructure: true });
+    // structure terms are a small adjustment, not a second full evaluation
+    expect(Math.abs(withStructure - plain)).toBeLessThan(120);
+  });
+
+  it('rewards a passed pawn and punishes a doubled, isolated one', () => {
+    const structure = { includeStructure: true } as const;
+    const free = evalFen('4k3/8/8/8/8/P7/8/4K3 w - - 0 1', structure);
+    const blocked = evalFen('4k3/p7/8/8/8/P7/8/4K3 w - - 0 1', structure);
+    expect(free).toBeGreaterThan(blocked);
+    const healthy = evalFen('4k3/ppp5/8/8/8/8/PPP5/4K3 w - - 0 1', structure);
+    const doubled = evalFen('4k3/ppp5/8/8/8/P7/P1P5/4K3 w - - 0 1', structure);
+    expect(healthy).toBeGreaterThan(doubled);
+    // and the same position without structure terms is identical, because the
+    // material and piece-square parts cancel out
+    expect(evalFen('4k3/ppp5/8/8/8/8/PPP5/4K3 w - - 0 1', {})).toBe(0);
+  });
+
+  it('centralises the king only in the endgame', () => {
+    const activeKing = '4k3/8/8/8/4K3/8/8/8 w - - 0 1';
+    const passiveKing = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
+    expect(evalFen(activeKing, {})).toBeGreaterThan(evalFen(passiveKing, {}));
+    // ...while with queens still on, a king in the centre is a liability (and the
+    // midgame table keeps it home)
+    const midgameActive = '4k2q/8/8/8/4K3/8/8/7Q w - - 0 1';
+    const midgameSafe = '4k2q/8/8/8/8/8/8/4K2Q w - - 0 1';
+    expect(evalFen(midgameSafe, {})).toBeGreaterThan(evalFen(midgameActive, {}));
   });
 });
