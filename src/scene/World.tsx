@@ -26,7 +26,8 @@ function Sky({ loc }: { loc: LocationPreset }) {
   return (
     <mesh>
       <sphereGeometry args={[120, 32, 20]} />
-      <meshBasicMaterial map={tex} side={THREE.BackSide} fog={false} toneMapped={false} color="#ffffff" />
+      {/* tone-mapped like everything else: an untonemapped sky clips to white */}
+      <meshBasicMaterial map={tex} side={THREE.BackSide} fog={false} color="#ffffff" />
     </mesh>
   );
 }

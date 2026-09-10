@@ -124,11 +124,14 @@ export function usePieceMaterials(piecesId: PieceStyleId, tint = '#ffffff', glow
         emissive: isAccent ? style.emissive * glow : style.emissive * 0.08,
         emissiveColor: isAccent ? accentColor : style.colors.lightAccent,
       });
+      if (style.id === 'staunton') {
+        // turned ivory/ebony reads through roughness and clearcoat, not a colour
+        // map: a grain texture wraps around the lathe and looks like a coil
+        m.roughnessMap = roughnessNoise(`piece-turn-${color}`, 0.22, 22);
+      }
       if (style.id === 'marble') {
         m.map = marbleTexture(`piece-${style.id}-${color}`, color, '#ffffff', 0.55);
         m.roughnessMap = roughnessNoise(`piece-${color}`, 0.5, 18);
-      } else if (style.id === 'staunton') {
-        m.map = woodTexture(`piece-${color}`, color, '#000000', 0.25);
       } else if (style.id === 'carved') {
         m.map = stoneTexture(`piece-${color}`, color, 0.35);
       }

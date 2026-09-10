@@ -10,7 +10,7 @@ import { easing } from 'maath';
 import { CAMERA_VIEWS } from '../data/styles';
 import { useSettings } from '../state/settings';
 
-export function Rig({ boardY, idle }: { boardY: number; idle?: boolean }) {
+export function Rig({ boardY, idle, locked = false }: { boardY: number; idle?: boolean; locked?: boolean }) {
   const view = useSettings((s) => s.cameraView);
   const tilt = useSettings((s) => s.boardTilt);
   const controls = useRef<React.ComponentRef<typeof OrbitControls> | null>(null);
@@ -46,6 +46,8 @@ export function Rig({ boardY, idle }: { boardY: number; idle?: boolean }) {
 
   return (
     <OrbitControls
+      enabled={!locked}
+      enableRotate={!locked}
       ref={controls}
       makeDefault
       enablePan={false}

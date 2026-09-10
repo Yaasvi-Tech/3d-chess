@@ -100,7 +100,7 @@ export function Scene() {
           <Board game={game} interactive={interactive} />
           <Pieces game={game} />
         </group>
-        <Rig boardY={boardY} idle={screen === 'home'} />
+        <Rig boardY={boardY} idle={screen === 'home'} locked={!!liveGame?.dragging} />
         <Effects />
       </Suspense>
       <AdaptiveDpr pixelated />

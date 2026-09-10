@@ -79,10 +79,11 @@ export function woodTexture(key: string, base: string, dark: string, jitter: num
   const darkCol = new THREE.Color(dark);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const n = fbm(x / 26, y / 190, 3, 7);
-      const grain = Math.sin((y / 5.2 + n * 12) * 1.0) * 0.5 + 0.5;
-      const t = Math.min(1, Math.max(0, grain * 0.55 + n * 0.45 + (hash(x, y, 3) - 0.5) * jitter));
-      const col = baseCol.clone().lerp(darkCol, t * 0.75);
+      // long, lazy grain: fine high-contrast stripes moire away at board scale
+      const n = fbm(x / 40, y / 230, 3, 7);
+      const grain = 0.5 + 0.5 * Math.sin(y / 11.5 + n * 6.5 + Math.sin(x / 64) * 2.1);
+      const t = Math.min(1, Math.max(0, grain * 0.4 + n * 0.4 + (hash(x, y, 3) - 0.5) * jitter));
+      const col = baseCol.clone().lerp(darkCol, t * 0.5);
       const i = (y * size + x) * 4;
       img.data[i] = col.r * 255;
       img.data[i + 1] = col.g * 255;
