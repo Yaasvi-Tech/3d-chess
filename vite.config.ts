@@ -6,6 +6,11 @@ import react from '@vitejs/plugin-react';
 // so there are no binary assets to fetch and the preview works offline.
 export default defineConfig({
   plugins: [react()],
+  // Relative asset URLs: the same `dist/` then works at a domain root, under a
+  // sub-path (GitHub Pages project sites, path-prefixed previews) and from a
+  // plain static file server. Hosts that rewrite unknown paths to the shell are
+  // described in scripts/postbuild.mjs, public/_redirects and vercel.json.
+  base: './',
   resolve: {
     alias: {
       '@': new URL('./src/', import.meta.url).pathname,
