@@ -55,6 +55,7 @@ export default function App() {
       const k = e.key.toLowerCase();
       if (k === 'escape') {
         setStudio(false);
+        if (useSession.getState().screen === 'customize') go('home');
         return;
       }
       if (k === 'c') setStudio((v) => !v);
@@ -67,7 +68,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game]);
+  }, [game, go]);
 
   return (
     <div className="app">
