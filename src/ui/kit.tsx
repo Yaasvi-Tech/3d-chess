@@ -1,5 +1,6 @@
 /** Small UI primitives shared by every screen. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 export function Btn({
   children,
@@ -141,7 +142,7 @@ export function Modal({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
-  return (
+  const content = (
     <div className="overlay" onMouseDown={(e) => (e.target === e.currentTarget ? onClose?.() : undefined)}>
       <div className="panel modal" style={wide ? { width: 'min(760px, 100%)' } : undefined} role="dialog" aria-modal="true">
         <div className="row" style={{ alignItems: 'flex-start' }}>
@@ -157,6 +158,9 @@ export function Modal({
       </div>
     </div>
   );
+  // portal so a modal can never be trapped (or clipped) by the panel it was
+  // opened from — backdrop-filter/overflow on ancestors would confine it
+  return typeof document === 'undefined' ? content : createPortal(content, document.body);
 }
 
 export function Chip({ children, tone, onClick, title }: { children: ReactNode; tone?: 'accent'; onClick?: () => void; title?: string }) {

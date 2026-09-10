@@ -65,7 +65,7 @@ textarea {
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
 }
 
 .stage {
@@ -85,11 +85,15 @@ textarea {
 
 .chrome {
   position: relative;
+  grid-area: 1 / 1;
   z-index: 2;
   pointer-events: none;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  /* a screen can grow, but never paint over the topbar or escape the viewport */
+  overflow: hidden;
 }
 
 .chrome > * {
@@ -456,20 +460,29 @@ h4 {
 .home {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 20px;
+  display: flex;
+  padding: 12px 20px 20px;
   pointer-events: none;
 }
 
 .home-card {
   pointer-events: auto;
   width: min(980px, 100%);
-  max-height: calc(100vh - 40px);
+  /* auto margins centre it when it fits and stay put when it does not, so the
+     card can never be pushed above the topbar the way `place-items:center` did */
+  margin: auto;
+  max-height: 100%;
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   gap: 0;
   overflow: hidden;
+}
+
+.home-hero,
+.home-side {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .home-hero {
@@ -540,6 +553,41 @@ h4 {
   flex-direction: column;
   gap: 12px;
   background: color-mix(in srgb, var(--bg) 26%, transparent);
+}
+
+
+/* ------------------------------------------------- short / landscape viewports */
+@media (max-height: 660px) {
+  .home {
+    padding: 8px 16px 10px;
+  }
+  .home-hero {
+    padding: 16px 20px 14px;
+    gap: 10px;
+  }
+  .home-hero h1 {
+    font-size: clamp(23px, 3.6vw, 34px);
+  }
+  .home-hero p {
+    font-size: 13px;
+  }
+  .home-side {
+    padding: 14px 16px;
+    gap: 9px;
+  }
+  .feature-grid {
+    gap: 6px;
+  }
+  .gallery {
+    gap: 6px;
+  }
+  .sheet header {
+    padding: 10px 14px 6px;
+  }
+  .tourney {
+    inset: 8px 12px 12px;
+    gap: 8px;
+  }
 }
 
 /* ------------------------------------------------------------------- HUD */
@@ -778,7 +826,7 @@ h4 {
 .sheet {
   position: absolute;
   right: 16px;
-  top: 70px;
+  top: 12px;
   bottom: 16px;
   width: min(430px, calc(100vw - 32px));
   display: flex;
@@ -921,7 +969,7 @@ h4 {
 /* -------------------------------------------------------------- tourneys */
 .tourney {
   position: absolute;
-  inset: 62px 16px 16px;
+  inset: 12px 16px 16px;
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.25fr);
   gap: 12px;
@@ -1271,6 +1319,12 @@ table.standings .num {
   }
   .home-card {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    overflow: auto;
+  }
+  .home-hero,
+  .home-side {
+    overflow: visible;
   }
   .home-side {
     border-left: 0;
