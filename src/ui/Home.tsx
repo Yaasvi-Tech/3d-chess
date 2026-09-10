@@ -2,7 +2,7 @@
 import { getDemoGame, useSession } from '../state/session';
 import { useGame } from '../hooks/useGame';
 import { useSettings } from '../state/settings';
-import { THEMES, TIME_CONTROLS, LOCATIONS, LEVELS_UI } from './presets';
+import { THEMES, TIME_CONTROLS, locationOf, LEVELS_UI } from './presets';
 import { Btn, Chip, Field, Seg } from './kit';
 import { useTournaments } from '../tournament/store';
 
@@ -30,7 +30,7 @@ export function Home() {
               {demo ? `${demo.seatFor('w').name} vs ${demo.seatFor('b').name} · ply ${demo.history.length}` : 'Attract mode'}
             </Chip>
             <span className="grow" />
-            <span className="tiny muted">{LOCATIONS[locationId].place}</span>
+            <span className="tiny muted">{locationOf(locationId).place}</span>
           </div>
           <h1>
             Chess, staged in <em>worlds</em>.
@@ -150,7 +150,7 @@ export function Home() {
                 <div className="meta">
                   <b>{t.name}</b>
                   <span>
-                    {LOCATIONS[t.location].name} · {t.board}
+                    {locationOf(t.location).name} · {t.board}
                   </span>
                 </div>
                 <span className="tag">{t.tag}</span>

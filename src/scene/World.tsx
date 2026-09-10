@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { memo, useMemo, useRef, type ComponentType } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Instance, Instances, MeshReflectorMaterial, Sparkles } from '@react-three/drei';
-import { LOCATIONS, type LocationId, type LocationPreset } from '../data/styles';
+import { LOCATIONS, locationOf, type LocationId, type LocationPreset } from '../data/styles';
 import { useSettings, type Quality } from '../state/settings';
 import { bannerTexture, bookTexture, gridGlowTexture, lavaTexture, marbleTexture, screenTexture, skyTexture, stoneTexture, woodTexture } from './textures';
 import { BOARD_OUTER } from './layout';
@@ -595,7 +595,7 @@ const PROPS: Record<LocationId, ComponentType<{ detail: number }>> = {
 };
 
 export const World = memo(function World({ locationId }: { locationId: LocationId }) {
-  const loc = LOCATIONS[locationId] ?? LOCATIONS.grandHall;
+  const loc = locationOf(locationId);
   const quality = useSettings((s) => s.quality) as Quality;
   const reflections = useSettings((s) => s.reflections);
   const detail = quality === 'low' ? 0.45 : quality === 'medium' ? 0.7 : 1;

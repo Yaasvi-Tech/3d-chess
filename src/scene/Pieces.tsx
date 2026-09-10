@@ -10,7 +10,7 @@ import { easing } from 'maath';
 import { tileToWorld } from '../game/board';
 import type { GameController } from '../game/controller';
 import type { TrackedPiece } from '../game/types';
-import { PIECE_STYLES, type PieceStyleId } from '../data/styles';
+import { pieceStyleOf, type PieceStyleId } from '../data/styles';
 import { buildPiece } from './pieceGeometry';
 import { usePieceMaterials } from './materials';
 import { useSettings } from '../state/settings';
@@ -29,7 +29,7 @@ const targetTmp = new THREE.Vector3();
 const PieceView = memo(function PieceView({ piece, game, styleId, mats, animate }: PieceProps) {
   const group = useRef<THREE.Group>(null);
   const spin = useRef(0);
-  const style = PIECE_STYLES[styleId];
+  const style = pieceStyleOf(styleId);
   const built = useMemo(() => buildPiece(style, piece.type), [style, piece.type]);
 
   const isSelected = game.selection === piece.square;
@@ -90,7 +90,7 @@ const GraveView = memo(function GraveView({
   mats: ReturnType<typeof usePieceMaterials>;
 }) {
   const group = useRef<THREE.Group>(null);
-  const style = PIECE_STYLES[styleId];
+  const style = pieceStyleOf(styleId);
   const built = useMemo(() => buildPiece(style, entry.piece.type), [style, entry.piece.type]);
   const { x, z } = tileToWorld(entry.piece.square);
   const dir = entry.piece.color === 'w' ? -1 : 1;
@@ -125,7 +125,7 @@ export function Pieces({ game }: { game: GameController | null }) {
   const animate = useSettings((s) => s.animateMoves);
   const glow = useSettings((s) => s.pieceGlow);
   const mats = usePieceMaterials(styleId, tint, glow);
-  const style = PIECE_STYLES[styleId];
+  const style = pieceStyleOf(styleId);
   const now = performance.now();
   const graves = game ? game.graves.filter((g) => now - g.at < 900) : [];
 

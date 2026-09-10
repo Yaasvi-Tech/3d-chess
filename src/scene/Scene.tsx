@@ -16,7 +16,7 @@ import { Effects } from './Effects';
 import { useSettings } from '../state/settings';
 import { useSession, getDemoGame } from '../state/session';
 import { useGame } from '../hooks/useGame';
-import { LOCATIONS, BOARD_STYLES } from '../data/styles';
+import { boardStyleOf, locationOf } from '../data/styles';
 import { PLINTH_HEIGHT } from './layout';
 
 function RendererTuning() {
@@ -26,7 +26,7 @@ function RendererTuning() {
   const exposure = useSettings((s) => s.exposure);
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
-  const loc = LOCATIONS[locationId] ?? LOCATIONS.grandHall;
+  const loc = locationOf(locationId);
   useEffect(() => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
     gl.toneMappingExposure = loc.tone * (1 + (exposure - 1));
@@ -47,8 +47,8 @@ function RendererTuning() {
 }
 
 /** Environment map built from area lights, so metals/glass have something to reflect. */
-const StageEnvironment = memo(function StageEnvironment({ locationId }: { locationId: keyof typeof LOCATIONS }) {
-  const loc = LOCATIONS[locationId];
+const StageEnvironment = memo(function StageEnvironment({ locationId }: { locationId: string }) {
+  const loc = locationOf(locationId);
   const quality = useSettings((s) => s.quality);
   const res = quality === 'low' ? 64 : quality === 'medium' ? 128 : 256;
   return (
@@ -74,10 +74,10 @@ export function Scene() {
   const demo = useMemo(() => (screen === 'home' || screen === 'customize' || screen === 'tournaments' ? getDemoGame() : null), [screen]);
   const game = useGame(preview ?? liveGame ?? demo);
   const interactive = screen === 'play' && !!liveGame && !preview;
-  const loc = LOCATIONS[locationId] ?? LOCATIONS.grandHall;
+  const loc = locationOf(locationId);
   // the board's plinth rests on the table top, so the tiles start one plinth higher
   const boardY = loc.table.height + PLINTH_HEIGHT - 0.01;
-  const boardStyle = BOARD_STYLES[boardId];
+  const boardStyle = boardStyleOf(boardId);
   const dpr: [number, number] = quality === 'low' ? [0.75, 1] : quality === 'medium' ? [1, 1.35] : quality === 'high' ? [1, 1.75] : [1, 2];
 
   return (

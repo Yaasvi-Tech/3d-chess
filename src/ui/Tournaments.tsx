@@ -10,7 +10,7 @@ import type { GameEntry, Player, Tournament } from '../tournament/types';
 import type { TournamentFormat } from '../tournament/types';
 import { useGame } from '../hooks/useGame';
 import { useSession } from '../state/session';
-import { TIME_CONTROLS, LOCATIONS, BOARD_STYLES, PIECE_STYLES } from './presets';
+import { TIME_CONTROLS, LOCATIONS, BOARD_STYLES, PIECE_STYLES, locationOf, boardStyleOf, pieceStyleOf } from './presets';
 import { LEVEL_INFO } from './presets';
 import { useSettings } from '../state/settings';
 import type { BoardStyleId, LocationId, PieceStyleId } from '../data/styles';
@@ -211,9 +211,9 @@ function VenuePicker({ t }: { t: Tournament }) {
             className="chip"
             style={{ cursor: 'pointer', borderColor: t.location === id ? 'var(--accent)' : undefined }}
             onClick={() => pick('location', id, 'location')}
-            title={LOCATIONS[id].blurb}
+            title={locationOf(id).blurb}
           >
-            {LOCATIONS[id].name}
+            {locationOf(id).name}
           </button>
         ))}
       </div>
@@ -228,7 +228,7 @@ function VenuePicker({ t }: { t: Tournament }) {
             style={{ cursor: 'pointer', borderColor: t.boardStyle === id ? 'var(--accent)' : undefined }}
             onClick={() => pick('boardStyle', id, 'board')}
           >
-            {BOARD_STYLES[id].name}
+            {boardStyleOf(id).name}
           </button>
         ))}
       </div>
@@ -243,7 +243,7 @@ function VenuePicker({ t }: { t: Tournament }) {
             style={{ cursor: 'pointer', borderColor: t.pieceStyle === id ? 'var(--accent)' : undefined }}
             onClick={() => pick('pieceStyle', id, 'pieces')}
           >
-            {PIECE_STYLES[id].name}
+            {pieceStyleOf(id).name}
           </button>
         ))}
       </div>

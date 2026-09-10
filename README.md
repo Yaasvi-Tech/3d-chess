@@ -20,7 +20,7 @@ works offline.
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # production bundle in dist/
-npm test         # 54 unit + integration tests
+npm test         # 62 unit + integration tests
 ```
 
 ## The four pillars

@@ -662,3 +662,10 @@ export const TIME_CONTROLS = [
 
 export type TimeControlId = (typeof TIME_CONTROLS)[number]['id'];
 
+
+/* ---- forgiving lookups: ids come back from localStorage and must never blank the stage ---- */
+export const boardStyleOf = (id: string): BoardStyle => BOARD_STYLES[id as BoardStyleId] ?? BOARD_STYLES.walnut;
+export const pieceStyleOf = (id: string): PieceStyle => PIECE_STYLES[id as PieceStyleId] ?? PIECE_STYLES.staunton;
+export const locationOf = (id: string): LocationPreset =>
+  LOCATIONS[id as LocationId] ?? LOCATIONS.grandHall;
+export const themeOf = (id: string): Theme => THEMES.find((t) => t.id === id) ?? THEMES[0];

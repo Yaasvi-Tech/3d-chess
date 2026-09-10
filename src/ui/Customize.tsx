@@ -3,7 +3,7 @@
  * locations, board finishes, piece sculpting styles, palette and render quality.
  * Changes apply to the live 3D stage immediately.
  */
-import { BOARD_STYLES, LOCATIONS, PIECE_STYLES, CAMERA_VIEWS } from './presets';
+import { boardStyleOf, locationOf, pieceStyleOf, CAMERA_VIEWS, BOARD_STYLES, PIECE_STYLES, LOCATIONS } from './presets';
 import { THEMES } from '../data/styles';
 import { useSettings, type Quality } from '../state/settings';
 import { Btn, ColorRow, Field, Seg, SectionTitle, Slider, Toggle } from './kit';
@@ -11,7 +11,7 @@ import { ACCENT_SWATCHES } from './presets';
 import type { BoardStyleId, LocationId, PieceStyleId } from '../data/styles';
 
 function BoardSwatch({ id }: { id: BoardStyleId }) {
-  const s = BOARD_STYLES[id];
+  const s = boardStyleOf(id);
   return (
     <div
       className="swatch"
@@ -38,7 +38,7 @@ function BoardSwatch({ id }: { id: BoardStyleId }) {
 }
 
 function PieceSwatch({ id }: { id: PieceStyleId }) {
-  const s = PIECE_STYLES[id];
+  const s = pieceStyleOf(id);
   const glyph = id === 'crystal' || id === 'cyber' ? '▲' : id === 'neo' ? '▮' : '♞';
   return (
     <div className="swatch" style={{ background: 'linear-gradient(160deg,#2a2f3a,#0e1116)', gap: 10 }}>
@@ -61,7 +61,7 @@ function PieceSwatch({ id }: { id: PieceStyleId }) {
 }
 
 function LocationSwatch({ id }: { id: LocationId }) {
-  const l = LOCATIONS[id];
+  const l = locationOf(id);
   const [top, mid, bot] = l.sky;
   return (
     <div className="swatch" style={{ background: `linear-gradient(180deg, ${top} 0%, ${mid} 58%, ${bot} 100%)` }}>
@@ -117,7 +117,7 @@ export function CustomizeSheet({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="meta">
                   <b>{t.name}</b>
-                  <span>{LOCATIONS[t.location].name}</span>
+                  <span>{locationOf(t.location).name}</span>
                 </div>
               </button>
             ))}
@@ -128,11 +128,11 @@ export function CustomizeSheet({ onClose }: { onClose: () => void }) {
           <SectionTitle title="Location" hint="the world around the board" />
           <div className="gallery">
             {(Object.keys(LOCATIONS) as LocationId[]).map((id) => (
-              <button key={id} className="tile" aria-pressed={s.location === id} onClick={() => set('location', id)} title={LOCATIONS[id].blurb}>
+              <button key={id} className="tile" aria-pressed={s.location === id} onClick={() => set('location', id)} title={locationOf(id).blurb}>
                 <LocationSwatch id={id} />
                 <div className="meta">
-                  <b>{LOCATIONS[id].name}</b>
-                  <span>{LOCATIONS[id].place}</span>
+                  <b>{locationOf(id).name}</b>
+                  <span>{locationOf(id).place}</span>
                 </div>
               </button>
             ))}
@@ -143,10 +143,10 @@ export function CustomizeSheet({ onClose }: { onClose: () => void }) {
           <SectionTitle title="Board" hint="surface, rim and inlay" />
           <div className="gallery">
             {(Object.keys(BOARD_STYLES) as BoardStyleId[]).map((id) => (
-              <button key={id} className="tile" aria-pressed={s.board === id} onClick={() => set('board', id)} title={BOARD_STYLES[id].blurb}>
+              <button key={id} className="tile" aria-pressed={s.board === id} onClick={() => set('board', id)} title={boardStyleOf(id).blurb}>
                 <BoardSwatch id={id} />
                 <div className="meta">
-                  <b>{BOARD_STYLES[id].name}</b>
+                  <b>{boardStyleOf(id).name}</b>
                   <span>{BOARD_STYLES[id].coords ? 'inlaid coordinates' : 'clean rim'}</span>
                 </div>
               </button>
@@ -158,11 +158,11 @@ export function CustomizeSheet({ onClose }: { onClose: () => void }) {
           <SectionTitle title="Pieces" hint="silhouette and material" />
           <div className="gallery">
             {(Object.keys(PIECE_STYLES) as PieceStyleId[]).map((id) => (
-              <button key={id} className="tile" aria-pressed={s.pieces === id} onClick={() => set('pieces', id)} title={PIECE_STYLES[id].blurb}>
+              <button key={id} className="tile" aria-pressed={s.pieces === id} onClick={() => set('pieces', id)} title={pieceStyleOf(id).blurb}>
                 <PieceSwatch id={id} />
                 <div className="meta">
-                  <b>{PIECE_STYLES[id].name}</b>
-                  <span>{PIECE_STYLES[id].blurb}</span>
+                  <b>{pieceStyleOf(id).name}</b>
+                  <span>{pieceStyleOf(id).blurb}</span>
                 </div>
               </button>
             ))}

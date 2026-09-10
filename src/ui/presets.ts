@@ -1,6 +1,6 @@
 /** Re-exports the style catalog for the UI layer, plus a few UI-only helpers. */
 import { LEVELS } from '../game/ai/engineCore';
-export { THEMES, TIME_CONTROLS, LOCATIONS, BOARD_STYLES, PIECE_STYLES, CAMERA_VIEWS } from '../data/styles';
+export { THEMES, TIME_CONTROLS, LOCATIONS, BOARD_STYLES, PIECE_STYLES, CAMERA_VIEWS, boardStyleOf, pieceStyleOf, locationOf, themeOf } from '../data/styles';
 export type { Theme, BoardStyleId, PieceStyleId, LocationId, TimeControlId, CameraViewId } from '../data/styles';
 
 export const LEVELS_UI = LEVELS.map((l) => ({

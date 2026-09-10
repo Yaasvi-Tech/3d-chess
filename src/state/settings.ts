@@ -184,6 +184,7 @@ export const useSettings = create<SettingsState>()(
 
 /** Push the theme palette into CSS custom properties (drives the DOM chrome). */
 export function applyUiTheme(ui: Theme['ui'], accent: string) {
+  if (typeof document === 'undefined') return;
   const root = document.documentElement;
   root.style.setProperty('--bg', ui.bg);
   root.style.setProperty('--panel', ui.panel);

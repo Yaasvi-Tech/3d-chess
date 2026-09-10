@@ -10,7 +10,7 @@ import { TournamentsScreen } from './ui/Tournaments';
 import { Btn } from './ui/kit';
 import { applyUiTheme, useSettings } from './state/settings';
 import { useSession } from './state/session';
-import { LOCATIONS } from './data/styles';
+import { locationOf } from './data/styles';
 
 class StageBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   override state = { failed: false };
@@ -82,7 +82,7 @@ export default function App() {
             <span className="mark">♞</span>
             <span>
               Chess3D
-              <small>{LOCATIONS[locationId].name}</small>
+              <small>{locationOf(locationId).name}</small>
             </span>
           </div>
           <nav className="nav">
