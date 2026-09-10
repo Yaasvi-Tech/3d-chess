@@ -1,0 +1,11 @@
+# Netlify / Cloudflare Pages response headers.
+# Vite fingerprints every filename in dist/assets, so those can be cached hard;
+# the shell itself must stay revalidated or a deploy would pin the old one.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

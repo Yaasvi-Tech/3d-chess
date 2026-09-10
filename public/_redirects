@@ -1,0 +1,3 @@
+# Netlify / Cloudflare Pages: unknown paths serve the app shell instead of a 404.
+# Vercel does the same via vercel.json; GitHub Pages uses the generated 404.html.
+/*    /index.html   200

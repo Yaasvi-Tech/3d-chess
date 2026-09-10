@@ -131,6 +131,37 @@ src/
 `useSyncExternalStore` and the tournament runner can drive dozens of them at once
 without a store per board.
 
+## Deploying
+
+`npm run build` is all a host needs: `dist/` is a static bundle with relative
+asset URLs, so the same output runs at a domain root *or* under a sub-path
+(GitHub Pages project sites, path-prefixed previews, a plain `python -m http.server`
+in `dist/`).
+
+```bash
+npm run build     # tsc -b && vite build && node scripts/postbuild.mjs
+npm run preview   # serves dist/ at http://localhost:5173
+```
+
+| Host | What is already in the repo |
+| --- | --- |
+| Vercel | `vercel.json` — Vite preset, `dist`, rewrite all paths to the shell |
+| Netlify / Cloudflare Pages | `public/_redirects` (rewrite) + `public/_headers` (caching) |
+| GitHub Pages | `scripts/postbuild.mjs` copies `index.html` → `dist/404.html` |
+| Anything else | serve `dist/`; point misses at `index.html` if your host can |
+
+Because Vite fingerprints every file in `assets/`, those are cached for a year as
+immutable; `index.html` and `404.html` are always revalidated, so a deploy can't
+strand an old shell.
+
+```bash
+# GitHub Pages, straight from your machine (works without any CI):
+npm run build && npx gh-pages -d dist
+```
+
+This repository is deliberately boring to a bundler — no CDN links, no fetched
+models, no `public/` art to lose — so those two config files are the whole story.
+
 ## Notes
 
 - Settings, tournaments and results persist in `localStorage`.
